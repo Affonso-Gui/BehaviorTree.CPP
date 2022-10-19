@@ -25,7 +25,12 @@ NodeStatus StateOperator::tick()
 {
   std::string registration_ID = child_node_->registrationName();
 
-  for (const auto node: Tree::transversed_nodes) {
+  // only check the main tree execution,
+  // which is delimited by its root node in the first and last positions
+  for (auto it = ++Tree::transversed_nodes.begin();
+       it != Tree::transversed_nodes.end() && (*it) != Tree::transversed_nodes.front();
+       it++) {
+    auto node = *it;
     if (node->registrationName() == registration_ID &&
         (node->status() == check_status_ ||
          node->previousStatus() == check_status_)) {

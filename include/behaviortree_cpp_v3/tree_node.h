@@ -184,6 +184,10 @@ public:
   // Notify the tree should be ticked again()
   void emitStateChanged();
 
+  void setStatus(NodeStatus new_status);
+
+  void setPreviousStatus();
+
 protected:
   /// Method to be implemented by the user
   virtual BT::NodeStatus tick() = 0;
@@ -199,10 +203,6 @@ protected:
   void setWakeUpInstance(std::shared_ptr<WakeUpSignal> instance);
 
   void modifyPortsRemapping(const PortsRemapping& new_remapping);
-
-  void setStatus(NodeStatus new_status);
-
-  void setPreviousStatus();
 
 private:
   const std::string name_;
