@@ -24,6 +24,7 @@
 #include "behaviortree_cpp_v3/controls/manual_node.h"
 #include "behaviortree_cpp_v3/controls/if_then_else_node.h"
 #include "behaviortree_cpp_v3/controls/while_do_else_node.h"
+#include "behaviortree_cpp_v3/controls/register_layered_tree.h"
 
 #include "behaviortree_cpp_v3/action_node.h"
 #include "behaviortree_cpp_v3/condition_node.h"

@@ -273,16 +273,22 @@ public:
       throw RuntimeError("Empty Tree");
     }
 
+    auto layers = dynamic_cast<const BT::RegisterLayers*>(rootNode());
+    if (!layers) {
+      throw RuntimeError("Root child is not of type RegisterLayers");
+    }
+
     bool set_main = false;
-    for (const auto node: nodes) {
-      if (node->type() == NodeType::SUBTREE) {
-        if (set_main) {
-          subordinate_roots_.push_back(node);
-          continue;
-        }
+    for (const auto& node : layers->children()) {
+      if (node->type() != NodeType::SUBTREE) {
+        throw RuntimeError("Only SubTrees can be registered as layers");
+      }
+      if (!set_main) {
         main_root_ = node;
         set_main = true;
+        continue;
       }
+      subordinate_roots_.push_back(node);
     }
   }
 
@@ -333,7 +339,7 @@ public:
     auto visitor = [](BT::TreeNode* node) {
       node->setPreviousStatus();
     };
-    BT::applyRecursiveVisitor(main_root_.get(), visitor);
+    BT::applyRecursiveVisitor(main_root_, visitor);
 
     return main_status;
   }
@@ -351,7 +357,7 @@ protected:
 
       // clear transversion node vector
       Tree::transversed_nodes.clear();
-      Tree::transversed_nodes.push_back(main_root_.get());
+      Tree::transversed_nodes.push_back(main_root_);
 
       NodeStatus ret = main_root_->executeTick();
       if (ret == NodeStatus::SUCCESS || ret == NodeStatus::FAILURE) {
@@ -360,7 +366,7 @@ protected:
 
       // ensure that the transversed vector starts and ends with the root node
       if (Tree::transversed_nodes.front() != Tree::transversed_nodes.back()) {
-        Tree::transversed_nodes.push_back(main_root_.get());
+        Tree::transversed_nodes.push_back(main_root_);
       }
 
       return ret;
@@ -368,8 +374,8 @@ protected:
   }
 
 private:
-  TreeNode::Ptr main_root_;
-  std::vector<TreeNode::Ptr> subordinate_roots_;
+  TreeNode* main_root_;
+  std::vector<TreeNode*> subordinate_roots_;
 };
 
 class Parser;

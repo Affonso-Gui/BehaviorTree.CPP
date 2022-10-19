@@ -33,6 +33,7 @@ BehaviorTreeFactory::BehaviorTreeFactory()
   registerNodeType<ReactiveFallback>("ReactiveFallback");
   registerNodeType<IfThenElseNode>("IfThenElse");
   registerNodeType<WhileDoElseNode>("WhileDoElse");
+  registerNodeType<RegisterLayers>("RegisterLayers");
 
   registerNodeType<InverterNode>("Inverter");
   //registerNodeType<RetryNodeTypo>("RetryUntilSuccesful"); //typo but back compatibility
