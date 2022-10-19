@@ -148,6 +148,7 @@ list(APPEND BT_SOURCE
     src/decorators/retry_node.cpp
     src/decorators/subtree_node.cpp
     src/decorators/delay_node.cpp
+    src/decorators/state_operator.cpp
 
     src/controls/if_then_else_node.cpp
     src/controls/fallback_node.cpp

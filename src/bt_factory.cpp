@@ -41,6 +41,9 @@ BehaviorTreeFactory::BehaviorTreeFactory()
   registerNodeType<RepeatNode>("Repeat");
   registerNodeType<TimeoutNode<>>("Timeout");
   registerNodeType<DelayNode>("Delay");
+  registerNodeType<RunningState>("IsRunning");
+  registerNodeType<SuccessState>("IsSuccess");
+  registerNodeType<FailureState>("IsFailure");
 
   registerNodeType<ForceSuccessNode>("ForceSuccess");
   registerNodeType<ForceFailureNode>("ForceFailure");
@@ -313,6 +316,8 @@ void BehaviorTreeFactory::addDescriptionToManifest(const std::string& node_id,
   }
   it->second.description = description;
 }
+
+std::vector<TreeNode*> Tree::transversed_nodes;
 
 void Tree::sleep(std::chrono::system_clock::duration timeout)
 {

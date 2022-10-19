@@ -32,6 +32,7 @@
 #include "behaviortree_cpp_v3/decorators/retry_node.h"
 #include "behaviortree_cpp_v3/decorators/repeat_node.h"
 #include "behaviortree_cpp_v3/decorators/subtree_node.h"
+#include "behaviortree_cpp_v3/decorators/state_operator.h"
 
 #include "behaviortree_cpp_v3/actions/always_success_node.h"
 #include "behaviortree_cpp_v3/actions/always_failure_node.h"

@@ -12,6 +12,7 @@
 */
 
 #include "behaviortree_cpp_v3/action_node.h"
+#include "behaviortree_cpp_v3/bt_factory.h"
 
 using namespace BT;
 
@@ -30,7 +31,6 @@ SimpleActionNode::SimpleActionNode(const std::string& name,
 NodeStatus SimpleActionNode::tick()
 {
   NodeStatus prev_status = status();
-
   if (prev_status == NodeStatus::IDLE)
   {
     setStatus(NodeStatus::RUNNING);
@@ -198,6 +198,7 @@ NodeStatus BT::AsyncActionNode::executeTick()
     exptr_ = nullptr;
     std::rethrow_exception(exptr_copy);
   }
+  BT::Tree::transversed_nodes.push_back(this);
   return status();
 }
 

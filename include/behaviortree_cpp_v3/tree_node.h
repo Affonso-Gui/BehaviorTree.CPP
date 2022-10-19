@@ -82,6 +82,8 @@ public:
 
   NodeStatus status() const;
 
+  NodeStatus previousStatus() const;
+
   /// Name of the instance, not the type
   const std::string& name() const;
 
@@ -200,10 +202,14 @@ protected:
 
   void setStatus(NodeStatus new_status);
 
+  void setPreviousStatus();
+
 private:
   const std::string name_;
 
   NodeStatus status_;
+
+  NodeStatus prev_status_;
 
   std::condition_variable state_condition_variable_;
 

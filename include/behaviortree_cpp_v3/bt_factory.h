@@ -131,6 +131,8 @@ public:
   std::vector<Blackboard::Ptr> blackboard_stack;
   std::unordered_map<std::string, TreeNodeManifest> manifests;
 
+  static std::vector<TreeNode*> transversed_nodes;
+
   Tree()
   {}
 
@@ -220,6 +222,17 @@ public:
     {
       throw RuntimeError("Empty Tree");
     }
+
+    // update the previous status of every node
+    auto visitor = [](BT::TreeNode* node) {
+      node->setPreviousStatus();
+    };
+    BT::applyRecursiveVisitor(rootNode(), visitor);
+
+    // clear transversion node vector
+    Tree::transversed_nodes.clear();
+    Tree::transversed_nodes.push_back(rootNode());
+
     NodeStatus ret = rootNode()->executeTick();
     if (ret == NodeStatus::SUCCESS || ret == NodeStatus::FAILURE)
     {

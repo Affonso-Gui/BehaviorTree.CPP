@@ -12,6 +12,7 @@
 */
 
 #include "behaviortree_cpp_v3/tree_node.h"
+#include "behaviortree_cpp_v3/bt_factory.h"
 #include <cstring>
 
 namespace BT
@@ -25,6 +26,7 @@ static uint16_t getUID()
 TreeNode::TreeNode(std::string name, NodeConfiguration config) :
   name_(std::move(name)),
   status_(NodeStatus::IDLE),
+  prev_status_(NodeStatus::IDLE),
   uid_(getUID()),
   config_(std::move(config))
 {}
@@ -57,28 +59,35 @@ NodeStatus TreeNode::executeTick()
   }
 
   setStatus(new_status);
+  BT::Tree::transversed_nodes.push_back(this);
   return new_status;
 }
 
 void TreeNode::setStatus(NodeStatus new_status)
 {
-  NodeStatus prev_status;
   {
     std::unique_lock<std::mutex> UniqueLock(state_mutex_);
-    prev_status = status_;
+    prev_status_ = status_;
     status_ = new_status;
   }
-  if (prev_status != new_status)
+  if (prev_status_ != new_status)
   {
     state_condition_variable_.notify_all();
     state_change_signal_.notify(std::chrono::high_resolution_clock::now(), *this,
-                                prev_status, new_status);
+                                prev_status_, new_status);
   }
+}
+
+void TreeNode::setPreviousStatus()
+{
+  std::unique_lock<std::mutex> lock(state_mutex_);
+  prev_status_ = status_;
 }
 
 void TreeNode::resetStatus()
 {
   std::unique_lock<std::mutex> lock(state_mutex_);
+  prev_status_ = status_;
   status_ = NodeStatus::IDLE;
 }
 
@@ -86,6 +95,12 @@ NodeStatus TreeNode::status() const
 {
   std::lock_guard<std::mutex> lock(state_mutex_);
   return status_;
+}
+
+NodeStatus TreeNode::previousStatus() const
+{
+  std::lock_guard<std::mutex> lock(state_mutex_);
+  return prev_status_;
 }
 
 NodeStatus TreeNode::waitValidStatus()
