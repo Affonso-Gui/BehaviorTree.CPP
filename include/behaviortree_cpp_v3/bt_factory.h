@@ -267,111 +267,34 @@ public:
   LayeredTree() : Tree()
   {}
 
-  LayeredTree(Tree&& other) : Tree(std::move(other))
+  LayeredTree(Tree&& other) :
+    Tree(std::move(other))
   {
-    if (nodes.empty()) {
-      throw RuntimeError("Empty Tree");
-    }
-
-    auto layers = dynamic_cast<const BT::RegisterLayers*>(rootNode());
-    if (!layers) {
-      throw RuntimeError("Root child is not of type RegisterLayers");
-    }
-
-    bool set_main = false;
-    for (const auto& node : layers->children()) {
-      if (node->type() != NodeType::SUBTREE) {
-        throw RuntimeError("Only SubTrees can be registered as layers");
-      }
-      if (!set_main) {
-        main_root_ = node;
-        set_main = true;
-        continue;
-      }
-      subordinate_roots_.push_back(node);
-    }
+    setLayers();
   }
 
   /**
    * @brief tickRoot send the tick signal to all layers.
    * It will propagate through the entire tree.
    */
-  NodeStatus tickRoot()
-  {
-    auto get_last_leaf = []() {
-      for (auto it = Tree::transversed_nodes.rbegin();
-           it != Tree::transversed_nodes.rend();
-           it++)
-      {
-        if (dynamic_cast<LeafNode*>(*it)) {
-          return *it;
-        }
-      }
-      return (TreeNode*)nullptr;
-    };
-
-    NodeStatus main_status = tickMainRoot();
-    TreeNode* last_node = get_last_leaf();
-
-    for (auto root: subordinate_roots_) {
-      NodeStatus tree_status = root->executeTick();
-      if (tree_status == NodeStatus::RUNNING)
-      {
-        // Untick main tree node
-        if (last_node) {
-          last_node->setStatus(NodeStatus::IDLE);
-          last_node->setPreviousStatus();
-        }
-        // Execute subordinate tree node
-        last_node = get_last_leaf();
-        if (last_node) {
-          last_node->executeTick();
-        }
-        return tree_status;
-      }
-    }
-
-    if (main_status == NodeStatus::RUNNING && last_node) {
-      last_node->executeTick();
-    }
-
-    // update the previous status of every node
-    auto visitor = [](BT::TreeNode* node) {
-      node->setPreviousStatus();
-    };
-    BT::applyRecursiveVisitor(main_root_, visitor);
-
-    return main_status;
-  }
+  NodeStatus tickRoot();
 
 protected:
   /**
    * @brief tickMainRoot send the tick signal to the main tree root node.
    * It will propagate through the entire tree.
    */
-  NodeStatus tickMainRoot() {
-    {
-      if (!wake_up_) {
-        initialize();
-      }
+  NodeStatus tickMainRoot();
 
-      // clear transversion node vector
-      Tree::transversed_nodes.clear();
-      Tree::transversed_nodes.push_back(main_root_);
-
-      NodeStatus ret = main_root_->executeTick();
-      if (ret == NodeStatus::SUCCESS || ret == NodeStatus::FAILURE) {
-        main_root_->setStatus(BT::NodeStatus::IDLE);
-      }
-
-      // ensure that the transversed vector starts and ends with the root node
-      if (Tree::transversed_nodes.front() != Tree::transversed_nodes.back()) {
-        Tree::transversed_nodes.push_back(main_root_);
-      }
-
-      return ret;
-    }
-  }
+  /**
+   * @brief setLayers set the main and subordinate layers based on
+   * the already registered nodes.
+   * The rootNode() must point to a tree with a RegisterLayers child
+   * and multiple subtrees below.
+   * The first subtree is registered as the main layer, and the others 
+   * as subordinate layers, in the appearing order.
+   */
+  void setLayers();
 
 private:
   TreeNode* main_root_;
