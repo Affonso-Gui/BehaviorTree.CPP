@@ -223,11 +223,11 @@ public:
       throw RuntimeError("Empty Tree");
     }
 
-    // // update the previous status of every node
-    // auto visitor = [](BT::TreeNode* node) {
-    //   node->setPreviousStatus();
-    // };
-    // BT::applyRecursiveVisitor(rootNode(), visitor);
+    // update the previous status of every node
+    auto visitor = [](BT::TreeNode* node) {
+      node->setPreviousStatus();
+    };
+    BT::applyRecursiveVisitor(rootNode(), visitor);
 
     // clear transversion node vector
     Tree::transversed_nodes.clear();
@@ -252,30 +252,42 @@ public:
   /// TreeNode::emitStateChanged()
   void sleep(std::chrono::system_clock::duration timeout);
 
-  ~Tree();
+  virtual ~Tree();
 
   Blackboard::Ptr rootBlackboard();
 
-private:
+protected:
   std::shared_ptr<WakeUpSignal> wake_up_;
 };
 
-class LayeredTree
+class LayeredTree : public Tree
 {
 public:
 
-  LayeredTree() {};
+  LayeredTree() : Tree()
+  {}
 
-  void initialize()
+  LayeredTree(Tree&& other) : Tree(std::move(other))
   {
-    main_tree_->initialize();
-    for (auto tree: subordinate_trees_) {
-      tree->initialize();
+    if (nodes.empty()) {
+      throw RuntimeError("Empty Tree");
+    }
+
+    bool set_main = false;
+    for (const auto node: nodes) {
+      if (node->type() == NodeType::SUBTREE) {
+        if (set_main) {
+          subordinate_roots_.push_back(node);
+          continue;
+        }
+        main_root_ = node;
+        set_main = true;
+      }
     }
   }
 
   /**
-   * @brief tickRoot send the tick signal to the root node.
+   * @brief tickRoot send the tick signal to all layers.
    * It will propagate through the entire tree.
    */
   NodeStatus tickRoot()
@@ -292,11 +304,11 @@ public:
       return (TreeNode*)nullptr;
     };
 
-    NodeStatus main_status = main_tree_->tickRoot();
+    NodeStatus main_status = tickMainRoot();
     TreeNode* last_node = get_last_leaf();
 
-    for (auto tree: subordinate_trees_) {
-      NodeStatus tree_status = tree->rootNode()->executeTick();
+    for (auto root: subordinate_roots_) {
+      NodeStatus tree_status = root->executeTick();
       if (tree_status == NodeStatus::RUNNING)
       {
         // Untick main tree node
@@ -321,22 +333,43 @@ public:
     auto visitor = [](BT::TreeNode* node) {
       node->setPreviousStatus();
     };
-    BT::applyRecursiveVisitor(main_tree_->rootNode(), visitor);
+    BT::applyRecursiveVisitor(main_root_.get(), visitor);
 
     return main_status;
   }
 
-  void setMainTree(Tree* tree) {
-    main_tree_ = tree;
-  }
+protected:
+  /**
+   * @brief tickMainRoot send the tick signal to the main tree root node.
+   * It will propagate through the entire tree.
+   */
+  NodeStatus tickMainRoot() {
+    {
+      if (!wake_up_) {
+        initialize();
+      }
 
-  void addSubordinateTree(Tree* tree) {
-    subordinate_trees_.push_back(tree);
+      // clear transversion node vector
+      Tree::transversed_nodes.clear();
+      Tree::transversed_nodes.push_back(main_root_.get());
+
+      NodeStatus ret = main_root_->executeTick();
+      if (ret == NodeStatus::SUCCESS || ret == NodeStatus::FAILURE) {
+        main_root_->setStatus(BT::NodeStatus::IDLE);
+      }
+
+      // ensure that the transversed vector starts and ends with the root node
+      if (Tree::transversed_nodes.front() != Tree::transversed_nodes.back()) {
+        Tree::transversed_nodes.push_back(main_root_.get());
+      }
+
+      return ret;
+    }
   }
 
 private:
-  Tree* main_tree_;
-  std::vector<Tree*> subordinate_trees_;
+  TreeNode::Ptr main_root_;
+  std::vector<TreeNode::Ptr> subordinate_roots_;
 };
 
 class Parser;
