@@ -307,6 +307,28 @@ Tree BehaviorTreeFactory::createTree(const std::string& tree_name,
   return tree;
 }
 
+Tree::Ptr BehaviorTreeFactory::
+maybeCreateLayeredTreeFromText(const std::string& text,
+                               Blackboard::Ptr blackboard)
+{
+  Tree tree = createTreeFromText(text, blackboard);
+  if (LayeredTree::IsLayeredTree(tree)) {
+    return std::make_unique<LayeredTree>(std::move(tree));
+  }
+  return std::make_unique<Tree>(std::move(tree));
+}
+
+Tree::Ptr BehaviorTreeFactory::
+maybeCreateLayeredTreeFromFile(const std::string& file_path,
+                               Blackboard::Ptr blackboard)
+{
+  Tree tree = createTreeFromFile(file_path, blackboard);
+  if (LayeredTree::IsLayeredTree(tree)) {
+    return std::make_unique<LayeredTree>(std::move(tree));
+  }
+  return std::make_unique<Tree>(std::move(tree));
+}
+
 void BehaviorTreeFactory::addDescriptionToManifest(const std::string& node_id,
                                                    const std::string& description)
 {
@@ -338,6 +360,14 @@ Blackboard::Ptr Tree::rootBlackboard()
     return blackboard_stack.front();
   }
   return {};
+}
+
+bool LayeredTree::IsLayeredTree(const Tree& tree)
+{
+  if (dynamic_cast<const RegisterLayers*>(tree.rootNode())) {
+    return true;
+  }
+  return false;
 }
 
 NodeStatus LayeredTree::tickRoot()

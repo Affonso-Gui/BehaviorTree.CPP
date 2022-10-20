@@ -127,6 +127,8 @@ See examples for more information about configuring CMake correctly
 class Tree
 {
 public:
+  typedef std::unique_ptr<Tree> Ptr;
+
   std::vector<TreeNode::Ptr> nodes;
   std::vector<Blackboard::Ptr> blackboard_stack;
   std::unordered_map<std::string, TreeNodeManifest> manifests;
@@ -280,6 +282,13 @@ public:
   {
     setLayers();
   }
+
+  /**
+   * @brief IsLayeredTree checks if a tree is layered
+   * by verifying if its root is a RegisterLayers node
+   * More strict testing is done at initialization
+   */
+  static bool IsLayeredTree(const Tree& tree);
 
   /**
    * @brief tickRoot send the tick signal to all layers.
@@ -550,6 +559,12 @@ public:
 
   Tree createTree(const std::string& tree_name,
                   Blackboard::Ptr blackboard = Blackboard::create());
+
+  // unique_ptr functions that can output Tree or LayeredTree
+  Tree::Ptr maybeCreateLayeredTreeFromText(const std::string& text,
+                                           Blackboard::Ptr blackboard = Blackboard::create());
+  Tree::Ptr maybeCreateLayeredTreeFromFile(const std::string& file_path,
+                                           Blackboard::Ptr blackboard = Blackboard::create());
 
   /// Add a description to a specific manifest. This description will be added
   /// to <TreeNodesModel> with the function writeTreeNodesModelXML()
