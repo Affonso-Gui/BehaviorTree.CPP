@@ -19,15 +19,31 @@
 namespace BT
 {
 /**
- * @brief The StateOperator returns SUCCESS if child's previous state
+ * @brief The PreviousStateOperator returns SUCCESS if child's previous state
  * was `check_status', or FAILURE otherwise
  */
-class StateOperator : public DecoratorNode
+class PreviousStateOperator : public DecoratorNode
 {
 public:
-  StateOperator(const std::string& name, NodeStatus check_status);
+  PreviousStateOperator(const std::string& name, NodeStatus check_status);
 
-  virtual ~StateOperator() override = default;
+  virtual ~PreviousStateOperator() override = default;
+
+private:
+  BT::NodeStatus check_status_;
+  virtual BT::NodeStatus tick() override;
+};
+
+/**
+ * @brief The CurrentStateOperator returns SUCCESS if child's current ticking
+ * state is `check_status', or FAILURE otherwise
+ */
+class CurrentStateOperator : public DecoratorNode
+{
+public:
+  CurrentStateOperator(const std::string& name, NodeStatus check_status);
+
+  virtual ~CurrentStateOperator() override = default;
 
 private:
   BT::NodeStatus check_status_;
@@ -38,7 +54,7 @@ private:
  * @brief The RunningState returns SUCCESS if child was RUNNING
  * or FAILURE otherwise
  */
-class RunningState : public StateOperator
+class RunningState : public PreviousStateOperator
 {
 public:
   RunningState(const std::string& name);
@@ -50,7 +66,7 @@ public:
  * @brief The SuccessState returns SUCCESS if child was SUCCESS
  * or FAILURE otherwise
  */
-class SuccessState : public StateOperator
+class SuccessState : public CurrentStateOperator
 {
 public:
   SuccessState(const std::string& name);
@@ -62,7 +78,7 @@ public:
  * @brief The FailureState returns SUCCESS if child was FAILURE
  * or FAILURE otherwise
  */
-class FailureState : public StateOperator
+class FailureState : public CurrentStateOperator
 {
 public:
   FailureState(const std::string& name);

@@ -16,61 +16,71 @@
 
 namespace BT
 {
-StateOperator::StateOperator(const std::string& name, NodeStatus check_status) :
+PreviousStateOperator::PreviousStateOperator(const std::string& name, NodeStatus check_status) :
   DecoratorNode(name, {} ),
   check_status_(check_status)
 {}
 
-NodeStatus StateOperator::tick()
+NodeStatus PreviousStateOperator::tick()
 {
+  // search in all tree nodes
   std::string registration_ID = child_node_->registrationName();
-
-  // only check the main tree execution,
-  // which is delimited by its root node in the first and last positions
-  for (auto it = ++Tree::transversed_nodes.begin();
-       it != Tree::transversed_nodes.end() && (*it) != Tree::transversed_nodes.front();
-       it++) {
-    auto node = *it;
-    if (node->registrationName() == registration_ID &&
-        (node->status() == check_status_ ||
-         node->previousStatus() == check_status_)) {
-      return NodeStatus::SUCCESS;
-    }
-  }
-
-  if (child_node_->type() == NodeType::CONDITION) {
-    return NodeStatus::FAILURE;
-  }
-
-  // search in past nodes
   NodeStatus result = NodeStatus::FAILURE;
   auto visitor = [this, registration_ID, &result](BT::TreeNode * node) {
     if (node->registrationName() == registration_ID &&
-        (node->status() == check_status_ ||
-         node->previousStatus() == check_status_)) {
+        node->previousStatus() == check_status_) {
       result = NodeStatus::SUCCESS;
     }
   };
-
   // front node is always the tree root
   BT::applyRecursiveVisitor(Tree::transversed_nodes.front(), visitor);
   return result;
 }
 
+CurrentStateOperator::CurrentStateOperator(const std::string& name, NodeStatus check_status) :
+  DecoratorNode(name, {} ),
+  check_status_(check_status)
+{}
+
+NodeStatus CurrentStateOperator::tick()
+{
+  // only check the main tree execution, which is stored in `Tree::transversed_nodes'
+  // and delimited by its root node in the first and last positions
+  std::string registration_ID = child_node_->registrationName();
+  for (auto it = ++Tree::transversed_nodes.begin();
+       it != Tree::transversed_nodes.end() && (*it) != Tree::transversed_nodes.front();
+       it++) {
+    auto node = *it;
+    if (node->registrationName() != registration_ID) {
+      continue;
+    }
+    NodeStatus status = node->status();
+    if (status == NodeStatus::IDLE) {
+      // if node has already been reset,
+      // search for its value in the previous state
+      status = node->previousStatus();
+    }
+    if (status == check_status_) {
+      return NodeStatus::SUCCESS;
+    }
+  }
+  return NodeStatus::FAILURE;
+}
+
 RunningState::RunningState(const std::string& name) :
-  StateOperator(name, NodeStatus::RUNNING)
+  PreviousStateOperator(name, NodeStatus::RUNNING)
 {
   setRegistrationID("IsRunning");
 }
 
 SuccessState::SuccessState(const std::string& name) :
-  StateOperator(name, NodeStatus::SUCCESS)
+  CurrentStateOperator(name, NodeStatus::SUCCESS)
 {
   setRegistrationID("IsSuccess");
 }
 
 FailureState::FailureState(const std::string& name) :
-  StateOperator(name, NodeStatus::FAILURE)
+  CurrentStateOperator(name, NodeStatus::FAILURE)
 {
   setRegistrationID("IsFailure");
 }

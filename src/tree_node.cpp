@@ -67,7 +67,9 @@ void TreeNode::setStatus(NodeStatus new_status)
 {
   {
     std::unique_lock<std::mutex> UniqueLock(state_mutex_);
-    prev_status_ = status_;
+    if (status_ != NodeStatus::IDLE) {
+      prev_status_ = status_;
+    }
     status_ = new_status;
   }
   if (prev_status_ != new_status)
@@ -87,7 +89,9 @@ void TreeNode::setPreviousStatus()
 void TreeNode::resetStatus()
 {
   std::unique_lock<std::mutex> lock(state_mutex_);
-  prev_status_ = status_;
+  if (status_ != NodeStatus::IDLE) {
+    prev_status_ = status_;
+  }
   status_ = NodeStatus::IDLE;
 }
 

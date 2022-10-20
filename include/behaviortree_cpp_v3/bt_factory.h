@@ -219,7 +219,7 @@ public:
    * @brief tickRoot send the tick signal to the root node.
    * It will propagate through the entire tree.
    */
-  NodeStatus tickRoot()
+  virtual NodeStatus tickRoot()
   {
     if (!wake_up_)
     {
@@ -285,7 +285,7 @@ public:
    * @brief tickRoot send the tick signal to all layers.
    * It will propagate through the entire tree.
    */
-  NodeStatus tickRoot();
+  virtual NodeStatus tickRoot() override;
 
 protected:
   /**

@@ -361,16 +361,16 @@ NodeStatus LayeredTree::tickRoot()
     {
       // Untick main tree node
       if (last_node) {
-        last_node->setStatus(NodeStatus::IDLE);
+        last_node->setStatus(last_node->previousStatus());
         last_node->setPreviousStatus();
       }
       return tree_status;
     }
+    root->setStatus(BT::NodeStatus::IDLE);
   }
+
   if (main_status == NodeStatus::RUNNING && last_node) {
     last_node->setStatus(last_node->previousStatus());
-    last_node->executeTick();
-    last_node->emitStateChanged();
   }
 
   // update the previous status of every node
@@ -378,6 +378,11 @@ NodeStatus LayeredTree::tickRoot()
     node->setPreviousStatus();
   };
   BT::applyRecursiveVisitor(main_root_, visitor);
+
+  if (main_status == NodeStatus::RUNNING && last_node) {
+    last_node->executeTick();
+    last_node->emitStateChanged();
+  }
 
   return main_status;
 }
