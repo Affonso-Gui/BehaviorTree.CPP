@@ -131,7 +131,15 @@ public:
   std::vector<Blackboard::Ptr> blackboard_stack;
   std::unordered_map<std::string, TreeNodeManifest> manifests;
 
+  // collect a vector of all of the transversed nodes,
+  // which is used to check if a condition has been
+  // activated in the main tree
   static std::vector<TreeNode*> transversed_nodes;
+
+  // when true, raise signals before ticking an action
+  // evaluation can be continued with emitStateChanged(),
+  // after ticking the stopped node
+  static bool preevaluation_mode;
 
   Tree()
   {}

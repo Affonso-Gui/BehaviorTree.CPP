@@ -66,6 +66,19 @@ public:
   {}
 };
 
+// Signalizes that a leaf action node has been reached during the ticking phase
+// used by the ticking of the LayeredTree class
+class ActionReached : public BehaviorTreeException
+{
+public:
+  ActionReached(nonstd::string_view message) : BehaviorTreeException(message)
+  {}
+
+  template <typename... SV>
+  ActionReached(const SV&... args) : BehaviorTreeException(args...)
+  {}
+};
+
 }   // namespace BT
 
 #endif

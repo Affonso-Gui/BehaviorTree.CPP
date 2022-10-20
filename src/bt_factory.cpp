@@ -319,6 +319,7 @@ void BehaviorTreeFactory::addDescriptionToManifest(const std::string& node_id,
 }
 
 std::vector<TreeNode*> Tree::transversed_nodes;
+bool Tree::preevaluation_mode = false;
 
 void Tree::sleep(std::chrono::system_clock::duration timeout)
 {
@@ -341,21 +342,19 @@ Blackboard::Ptr Tree::rootBlackboard()
 
 NodeStatus LayeredTree::tickRoot()
 {
-  auto get_last_leaf = []() {
-    for (auto it = Tree::transversed_nodes.rbegin();
-         it != Tree::transversed_nodes.rend();
-         it++)
-    {
-      if (dynamic_cast<LeafNode*>(*it)) {
-        return *it;
-      }
-    }
-    return (TreeNode*)nullptr;
-  };
+  TreeNode* last_node = nullptr;
+  NodeStatus main_status;
+  try {
+    Tree::preevaluation_mode = true;
+    main_status = tickMainRoot();
+  }
+  catch (ActionReached& err) {
+    main_status = NodeStatus::RUNNING;
+    last_node = Tree::transversed_nodes.back();
+    Tree::transversed_nodes.push_back(main_root_);
+  }
 
-  NodeStatus main_status = tickMainRoot();
-  TreeNode* last_node = get_last_leaf();
-
+  Tree::preevaluation_mode = false;
   for (auto root: subordinate_roots_) {
     NodeStatus tree_status = root->executeTick();
     if (tree_status == NodeStatus::RUNNING)
@@ -365,17 +364,13 @@ NodeStatus LayeredTree::tickRoot()
         last_node->setStatus(NodeStatus::IDLE);
         last_node->setPreviousStatus();
       }
-      // Execute subordinate tree node
-      last_node = get_last_leaf();
-      if (last_node) {
-        last_node->executeTick();
-      }
       return tree_status;
     }
   }
-
   if (main_status == NodeStatus::RUNNING && last_node) {
+    last_node->setStatus(last_node->previousStatus());
     last_node->executeTick();
+    last_node->emitStateChanged();
   }
 
   // update the previous status of every node

@@ -165,12 +165,11 @@ NodeStatus BT::AsyncActionNode::executeTick()
   if (status() == NodeStatus::IDLE)
   {
     setStatus(NodeStatus::RUNNING);
-  }
-  if (status() == NodeStatus::RUNNING &&
-      previousStatus() == NodeStatus::IDLE) {
-    // only start node in the second tick,
-    // prioritizing the execution of subordinate layers
-    setPreviousStatus();
+    // push node and raise ActionReached
+    if (Tree::preevaluation_mode) {
+      BT::Tree::transversed_nodes.push_back(this);
+      throw ActionReached(this->name());
+    }
     halt_requested_ = false;
     thread_handle_ = std::async(std::launch::async, [this]() {
       try
