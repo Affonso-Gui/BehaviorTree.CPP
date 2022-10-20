@@ -38,6 +38,9 @@ public:
   ActionNodeBase(const std::string& name, const NodeConfiguration& config);
   ~ActionNodeBase() override = default;
 
+  /// checks the value of `Tree::preevaluation_mode' before executing
+  virtual NodeStatus executeTick() override;
+
   virtual NodeType type() const override final
   {
     return NodeType::ACTION;

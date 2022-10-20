@@ -20,6 +20,20 @@ ActionNodeBase::ActionNodeBase(const std::string& name, const NodeConfiguration&
   LeafNode::LeafNode(name, config)
 {}
 
+NodeStatus ActionNodeBase::executeTick()
+{
+  if (status() == NodeStatus::IDLE && Tree::preevaluation_mode) {
+    setStatus(NodeStatus::RUNNING);
+    BT::Tree::transversed_nodes.push_back(this);
+    throw ActionReached(this->name());
+  }
+
+  NodeStatus new_status = tick();
+  setStatus(new_status);
+  BT::Tree::transversed_nodes.push_back(this);
+  return new_status;
+}
+
 //-------------------------------------------------------
 
 SimpleActionNode::SimpleActionNode(const std::string& name,
@@ -53,7 +67,9 @@ SyncActionNode::SyncActionNode(const std::string& name, const NodeConfiguration&
 
 NodeStatus SyncActionNode::executeTick()
 {
-  auto stat = ActionNodeBase::executeTick();
+  // skip ActionNodeBase, since we never want to stop
+  // evaluation, even in `Tree:preevaluation_mode'
+  auto stat = LeafNode::executeTick();
   if (stat == NodeStatus::RUNNING)
   {
     throw LogicError("SyncActionNode MUST never return RUNNING");
